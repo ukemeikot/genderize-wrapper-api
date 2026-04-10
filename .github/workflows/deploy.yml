@@ -51,23 +51,28 @@ jobs:
           EC2_APP_PATH: ${{ secrets.EC2_APP_PATH }}
         run: |
           APP_PATH="${EC2_APP_PATH:-/home/ubuntu/apps/gender-classify-api}"
-          ssh "${EC2_USER}@${EC2_HOST}" <<EOF
-            set -e
+          ssh "${EC2_USER}@${EC2_HOST}" "APP_PATH='${APP_PATH}' bash -se" <<'EOF'
             cd "${APP_PATH}"
             git pull --ff-only origin main
             docker compose --env-file .env.production up -d --build --remove-orphans
             docker image prune -f
             docker compose ps
 
+            healthy=0
             for attempt in 1 2 3 4 5 6 7 8 9 10; do
               if curl -fsS http://127.0.0.1:8080/api/classify?name=James > /dev/null; then
                 echo "Application health check passed on attempt ${attempt}."
-                exit 0
+                healthy=1
+                break
               fi
 
               echo "Health check attempt ${attempt} failed. Waiting before retry..."
               sleep 6
             done
+
+            if [ "${healthy}" -eq 1 ]; then
+              exit 0
+            fi
 
             echo "Application did not become healthy in time. Recent container logs:"
             docker compose logs --tail=100
