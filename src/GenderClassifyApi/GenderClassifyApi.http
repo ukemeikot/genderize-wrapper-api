@@ -1,6 +1,11 @@
 @GenderClassifyApi_HostAddress = http://localhost:5280
 
-GET {{GenderClassifyApi_HostAddress}}/weatherforecast/
+GET {{GenderClassifyApi_HostAddress}}/api/classify?name=James
+Accept: application/json
+
+###
+
+GET {{GenderClassifyApi_HostAddress}}/api/classify
 Accept: application/json
 
 ###

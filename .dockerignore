@@ -1,0 +1,14 @@
+**/bin/
+**/obj/
+.git/
+.vs/
+.idea/
+.env
+.env.*
+!.env.example
+!.env.*.example
+publish/
+TestResults/
+coverage*.json
+coverage*.xml
+coverage*.info

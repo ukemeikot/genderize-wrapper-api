@@ -1,0 +1,16 @@
+services:
+  gender-classify-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gender-classify-api:latest
+    container_name: gender-classify-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      ASPNETCORE_URLS: ${ASPNETCORE_URLS}
+      Genderize__BaseUrl: ${Genderize__BaseUrl}
+      Genderize__TimeoutSeconds: ${Genderize__TimeoutSeconds}
+      Genderize__ApiKey: ${Genderize__ApiKey}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
