@@ -108,6 +108,24 @@ public sealed class GenderizeServiceTests
             .WithMessage("Unable to reach the gender prediction service");
     }
 
+    [Fact]
+    public async Task GetGenderPredictionAsync_ShouldThrow_WhenRequestTimesOut()
+    {
+        var handler = new TimeoutHttpMessageHandler();
+        var httpClient = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("https://api.genderize.io/"),
+            Timeout = TimeSpan.FromMilliseconds(50)
+        };
+
+        var service = CreateService(httpClient);
+
+        var action = async () => await service.GetGenderPredictionAsync("James");
+
+        await action.Should().ThrowAsync<GenderizeUnavailableException>()
+            .WithMessage("Unable to reach the gender prediction service");
+    }
+
     private static GenderizeService CreateService(HttpClient httpClient, string? apiKey = null)
     {
         return new GenderizeService(
@@ -134,6 +152,17 @@ public sealed class GenderizeServiceTests
             CancellationToken cancellationToken)
         {
             return Task.FromResult(_handler(request));
+        }
+    }
+
+    private sealed class TimeoutHttpMessageHandler : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+            return new HttpResponseMessage(HttpStatusCode.OK);
         }
     }
 }

@@ -71,6 +71,28 @@ public sealed class ClassifyControllerTests
     }
 
     [Fact]
+    public async Task Classify_ShouldReturnNotFound_WhenGenderizeReturnsZeroSampleSize()
+    {
+        _genderizeService
+            .Setup(service => service.GetGenderPredictionAsync("RareName", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GenderizeApiResponse
+            {
+                Name = "RareName",
+                Gender = "male",
+                Probability = 0.85,
+                Count = 0
+            });
+
+        var controller = CreateController("?name=RareName");
+
+        var result = await controller.Classify("RareName", CancellationToken.None);
+
+        var notFoundResult = result.Should().BeOfType<NotFoundObjectResult>().Subject;
+        notFoundResult.Value.Should().BeEquivalentTo(
+            new ErrorResponse("No prediction available for the provided name"));
+    }
+
+    [Fact]
     public async Task Classify_ShouldReturnSuccessResponse_WhenPredictionExists()
     {
         _genderizeService
@@ -99,6 +121,28 @@ public sealed class ClassifyControllerTests
     }
 
     [Fact]
+    public async Task Classify_ShouldSetIsConfidentToTrue_WhenValuesAreExactlyAtThreshold()
+    {
+        _genderizeService
+            .Setup(service => service.GetGenderPredictionAsync("Jordan", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GenderizeApiResponse
+            {
+                Name = "Jordan",
+                Gender = "male",
+                Probability = 0.7,
+                Count = 100
+            });
+
+        var controller = CreateController("?name=Jordan");
+
+        var result = await controller.Classify("Jordan", CancellationToken.None);
+
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        var payload = okResult.Value.Should().BeOfType<ClassifyResponse>().Subject;
+        payload.Data.IsConfident.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Classify_ShouldSetIsConfidentToFalse_WhenProbabilityOrSampleSizeAreBelowThreshold()
     {
         _genderizeService
@@ -114,6 +158,28 @@ public sealed class ClassifyControllerTests
         var controller = CreateController("?name=Taylor");
 
         var result = await controller.Classify("Taylor", CancellationToken.None);
+
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        var payload = okResult.Value.Should().BeOfType<ClassifyResponse>().Subject;
+        payload.Data.IsConfident.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Classify_ShouldSetIsConfidentToFalse_WhenProbabilityIsBelowThreshold()
+    {
+        _genderizeService
+            .Setup(service => service.GetGenderPredictionAsync("Alex", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GenderizeApiResponse
+            {
+                Name = "Alex",
+                Gender = "male",
+                Probability = 0.69,
+                Count = 200
+            });
+
+        var controller = CreateController("?name=Alex");
+
+        var result = await controller.Classify("Alex", CancellationToken.None);
 
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
         var payload = okResult.Value.Should().BeOfType<ClassifyResponse>().Subject;
