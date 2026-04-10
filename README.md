@@ -296,6 +296,24 @@ For AWS EC2 deployment with your own domain:
 - run `docker compose --env-file .env.production up -d --build`
 - point your domain `A` record to the instance Elastic IP
 - place the app behind Nginx or Caddy for `80/443` handling and TLS
+- the included `compose.yaml` binds the app to `127.0.0.1:8080` so it is intended to sit behind a reverse proxy like Caddy
+
+### GitHub Actions Auto-Deploy
+
+The repository includes a workflow at `.github/workflows/deploy.yml` that:
+
+- runs on every push to `main`
+- restores, builds, and tests the solution
+- SSHes into the EC2 instance
+- pulls the latest `main` branch
+- rebuilds and restarts the Dockerized app
+
+Add these GitHub Actions repository secrets before using it:
+
+- `EC2_HOST` - your server public IP or DNS name
+- `EC2_USER` - the SSH user, for example `ubuntu`
+- `EC2_SSH_PRIVATE_KEY` - the private key GitHub Actions should use to SSH into the server
+- `EC2_APP_PATH` - optional; defaults to `/home/ubuntu/apps/gender-classify-api`
 
 Once deployed, replace this placeholder:
 
